@@ -1,17 +1,114 @@
 import { useState, useEffect, useRef } from "react";
 
-const STEPS_META = [
-  { id: 1, label: "Proces" },
-  { id: 2, label: "Definicja" },
-  { id: 3, label: "Projekt" },
-  { id: 4, label: "Dane" },
-  { id: 5, label: "Właściciel" },
-  { id: 6, label: "Ryzyko" },
-  { id: 7, label: "Plan B" },
-  { id: 8, label: "Ocena" },
-];
+const T = {
+  pl: {
+    stepsLabels: ["Proces", "Definicja", "Projekt", "Dane", "Właściciel", "Ryzyko", "Plan B", "Ocena"],
+    badge: "WARSZTAT INTERAKTYWNY",
+    subtitle: "Błędy adopcji sztucznej inteligencji w biznesie",
+    introText: "Sprawdź, czy Twój proces biznesowy jest gotowy na wdrożenie AI. Odpowiedz na 7 pytań — zajmie Ci to około 7 minut. Na końcu otrzymasz spersonalizowaną ocenę gotowości.",
+    startBtn: "Rozpocznij sprawdzanie →",
+    author: "Prowadzący:",
+    newSession: "↺ Nowa sesja",
+    analyzing: "Analizuję odpowiedź",
+    stepOf: (n) => `Krok ${n} z 7`,
+    stepTitles: { 1: "Zdefiniuj proces", 2: "Jasność definicji", 3: "Projekt procesu", 4: "Jakość danych", 5: "Właściciel procesu", 6: "Identyfikacja ryzyk", 7: "Plan awaryjny" },
+    question1: "Opisz proces biznesowy, który chciałbyś zautomatyzować lub usprawnić z pomocą sztucznej inteligencji.",
+    hint1: "Napisz krótko — wystarczą 1–3 zdania. Podaj konkretny proces, np. „automatyczna klasyfikacja faktur kosztowych".",
+    placeholder: "Wpisz swoją odpowiedź tutaj...",
+    nextBtn: "Dalej →",
+    showResult: "Pokaż wynik →",
+    timer: "⏱ ~1 min",
+    errorEmpty: "Proszę wpisać odpowiedź przed przejściem dalej.",
+    errorLowEffort: "Twoja odpowiedź jest zbyt krótka lub ogólnikowa. Opisz konkretny proces biznesowy.",
+    errorGenQuestion: "Nie udało się wygenerować pytania. Spróbuj ponownie.",
+    errorGenResult: "Nie udało się wygenerować oceny. Spróbuj ponownie.",
+    errorParse: "Błąd analizy wyników. Spróbuj ponownie.",
+    retry: "Spróbuj ponownie",
+    startOver: "↺ Zacznij od nowa",
+    resultBadge: "WYNIK ANALIZY",
+    strengths: "✓ Mocne strony",
+    risks: "⚠ Ryzyka",
+    nextStep: "→ Następny krok",
+    download: "⬇ Pobierz raport (TXT)",
+    toolBy: "Narzędzie:",
+    scoreLabels: { high: "Wysoka gotowość", moderate: "Umiarkowana gotowość", low: "Niska gotowość", none: "Wymaga przygotowania" },
+    reportTitle: "AI READINESS CHECK — RAPORT",
+    reportDate: "Data",
+    reportAuthor: "Autor",
+    reportScore: "WYNIK",
+    reportAnswers: "--- ODPOWIEDZI ---",
+    reportEval: "--- OCENA ---",
+    reportStrengths: "MOCNE STRONY",
+    reportRisks: "RYZYKA",
+    reportNextStep: "NASTĘPNY KROK",
+    selectLang: "Wybierz język / Select language",
+    ctxLabels: { 1: "PROCES DO AUTOMATYZACJI", 2: "JASNOŚĆ DEFINICJI PROBLEMU", 3: "PROJEKTOWANIE PROCESU BIZNESOWEGO", 4: "JAKOŚĆ DANYCH", 5: "WŁAŚCICIEL PROCESU", 6: "IDENTYFIKACJA RYZYK", 7: "PLAN AWARYJNY" },
+    prompts: {
+      2: `Jesteś ekspertem od wdrożeń AI w biznesie. Prowadzisz warsztat "Błędy adopcji AI w biznesie". Uczestnik opisał proces, który chce zautomatyzować z AI. Zadaj JEDNO konkretne pytanie sprawdzające, czy problem jest jasno zdefiniowany. Pytanie powinno być krótkie (1-2 zdania), nawiązywać bezpośrednio do tego, co napisał uczestnik. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj w nowej linii krótką wskazówkę zaczynającą się od "💡 Wskazówka:". Pisz po polsku.`,
+      3: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie sprawdzające, czy podejście uczestnika to przemyślany projekt, czy raczej "AI dla AI". Nawiąż do konkretnego procesu. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
+      4: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o jakość danych w kontekście tego procesu. Po pytaniu dodaj 2-3 zdania wyjaśnienia czym są "wystarczająco dobre dane" dla tego procesu. Pisz po polsku.`,
+      5: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o właściciela procesu. Nawiąż do procesu uczestnika. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
+      6: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o to, gdzie AI może się mylić w tym procesie. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
+      7: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o plan awaryjny — co gdy AI się pomyli? Nawiąż do wskazanych ryzyk. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
+    },
+    finalPrompt: `Jesteś ekspertem od wdrożeń AI w biznesie. Oceń gotowość procesu uczestnika do wdrożenia AI na podstawie jego odpowiedzi. Odpowiedz TYLKO w formacie JSON (bez markdown, bez backtickow): {"score":<0-100>,"comment":"<5 zdań>","strengths":["<s1>","<s2>"],"risks":["<r1>","<r2>"],"nextStep":"<zalecenie>"}. Pisz po polsku.`,
+  },
+  en: {
+    stepsLabels: ["Process", "Definition", "Design", "Data", "Owner", "Risk", "Plan B", "Score"],
+    badge: "INTERACTIVE WORKSHOP",
+    subtitle: "AI adoption mistakes in business",
+    introText: "Check if your business process is ready for AI implementation. Answer 7 questions — it will take about 7 minutes. At the end you will receive a personalized readiness assessment.",
+    startBtn: "Start assessment →",
+    author: "Facilitator:",
+    newSession: "↺ New session",
+    analyzing: "Analyzing response",
+    stepOf: (n) => `Step ${n} of 7`,
+    stepTitles: { 1: "Define the process", 2: "Problem clarity", 3: "Process design", 4: "Data quality", 5: "Process owner", 6: "Risk identification", 7: "Contingency plan" },
+    question1: "Describe the business process you would like to automate or improve with artificial intelligence.",
+    hint1: "Keep it short — 1–3 sentences are enough. Name a specific process, e.g. 'automatic classification of cost invoices'.",
+    placeholder: "Type your answer here...",
+    nextBtn: "Next →",
+    showResult: "Show result →",
+    timer: "⏱ ~1 min",
+    errorEmpty: "Please enter an answer before proceeding.",
+    errorLowEffort: "Your answer is too short or vague. Describe a specific business process.",
+    errorGenQuestion: "Failed to generate a question. Please try again.",
+    errorGenResult: "Failed to generate the assessment. Please try again.",
+    errorParse: "Error parsing results. Please try again.",
+    retry: "Try again",
+    startOver: "↺ Start over",
+    resultBadge: "ANALYSIS RESULT",
+    strengths: "✓ Strengths",
+    risks: "⚠ Risks",
+    nextStep: "→ Next step",
+    download: "⬇ Download report (TXT)",
+    toolBy: "Tool:",
+    scoreLabels: { high: "High readiness", moderate: "Moderate readiness", low: "Low readiness", none: "Needs preparation" },
+    reportTitle: "AI READINESS CHECK — REPORT",
+    reportDate: "Date",
+    reportAuthor: "Author",
+    reportScore: "SCORE",
+    reportAnswers: "--- ANSWERS ---",
+    reportEval: "--- ASSESSMENT ---",
+    reportStrengths: "STRENGTHS",
+    reportRisks: "RISKS",
+    reportNextStep: "NEXT STEP",
+    selectLang: "Wybierz język / Select language",
+    ctxLabels: { 1: "PROCESS TO AUTOMATE", 2: "PROBLEM DEFINITION CLARITY", 3: "BUSINESS PROCESS DESIGN", 4: "DATA QUALITY", 5: "PROCESS OWNER", 6: "RISK IDENTIFICATION", 7: "CONTINGENCY PLAN" },
+    prompts: {
+      2: `You are an expert in AI implementation in business. You are running a workshop "AI adoption mistakes in business". The participant described a process they want to automate with AI. Ask ONE specific question to check whether the problem is clearly defined. The question should be short (1-2 sentences) and refer directly to what the participant wrote. Reply ONLY with the question. After the question, add a short hint on a new line starting with "💡 Hint:". Write in English.`,
+      3: `You are an expert in AI implementation in business. Ask ONE question to check whether the participant's approach is a well-thought-out project or rather "AI for AI's sake". Refer to the specific process. Reply ONLY with the question. After the question, add "💡 Hint:". Write in English.`,
+      4: `You are an expert in AI implementation in business. Ask ONE question about data quality in the context of this process. After the question, add 2-3 sentences explaining what "good enough data" means for this process. Write in English.`,
+      5: `You are an expert in AI implementation in business. Ask ONE question about the process owner. Refer to the participant's process. Reply ONLY with the question. After the question, add "💡 Hint:". Write in English.`,
+      6: `You are an expert in AI implementation in business. Ask ONE question about where AI might fail in this process. Reply ONLY with the question. After the question, add "💡 Hint:". Write in English.`,
+      7: `You are an expert in AI implementation in business. Ask ONE question about the contingency plan — what if AI makes a mistake? Refer to the identified risks. Reply ONLY with the question. After the question, add "💡 Hint:". Write in English.`,
+    },
+    finalPrompt: `You are an expert in AI implementation in business. Assess the participant's process readiness for AI implementation based on their answers. Reply ONLY in JSON format (no markdown, no backticks): {"score":<0-100>,"comment":"<5 sentences>","strengths":["<s1>","<s2>"],"risks":["<r1>","<r2>"],"nextStep":"<recommendation>"}. Write in English.`,
+  },
+};
 
-// ← JEDYNA ZMIANA vs artefakt: wywołuje /api/claude zamiast api.anthropic.com
+const STEP_ICONS = { 1: "🎯", 2: "🔍", 3: "⚙️", 4: "📊", 5: "👤", 6: "⚠️", 7: "🛡️" };
+
 async function callLLM(systemPrompt, userPrompt) {
   try {
     const response = await fetch("/api/claude", {
@@ -28,18 +125,20 @@ async function callLLM(systemPrompt, userPrompt) {
 
 function isLowEffort(text) {
   if (!text || text.trim().length < 5) return true;
-  const low = /^(test|asdf|xxx|aaa|bbb|nie wiem|nic|coś|cokolwiek|blabla|hej|elo|siema|tak|nie|ok|dupa|xd|haha|lol)$/i;
+  const low = /^(test|asdf|xxx|aaa|bbb|nie wiem|nic|coś|cokolwiek|blabla|hej|elo|siema|tak|nie|ok|dupa|xd|haha|lol|idk|nothing|whatever|hello|hi|yes|no|nope)$/i;
   return low.test(text.trim());
 }
 
-function ProgressBar({ currentStep }) {
+function ProgressBar({ currentStep, lang }) {
+  const labels = T[lang].stepsLabels;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 0, margin: "0 auto 36px", maxWidth: 620 }}>
-      {STEPS_META.map((s, i) => {
-        const done = currentStep > s.id;
-        const active = currentStep === s.id;
+      {labels.map((label, i) => {
+        const id = i + 1;
+        const done = currentStep > id;
+        const active = currentStep === id;
         return (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+          <div key={id} style={{ display: "flex", alignItems: "center", flex: 1 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 36 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center",
@@ -50,7 +149,7 @@ function ProgressBar({ currentStep }) {
                 border: active ? "2px solid #f59e0b" : "2px solid transparent",
                 transition: "all 0.4s ease",
               }}>
-                {done ? "✓" : s.id}
+                {done ? "✓" : id}
               </div>
               <span style={{
                 fontSize: 9, marginTop: 4,
@@ -59,10 +158,10 @@ function ProgressBar({ currentStep }) {
                 fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: "0.05em", textTransform: "uppercase",
               }}>
-                {s.label}
+                {label}
               </span>
             </div>
-            {i < STEPS_META.length - 1 && (
+            {i < labels.length - 1 && (
               <div style={{
                 flex: 1, height: 2,
                 background: done ? "#22c55e" : "rgba(255,255,255,0.08)",
@@ -76,7 +175,7 @@ function ProgressBar({ currentStep }) {
   );
 }
 
-function LoadingDots() {
+function LoadingDots({ lang }) {
   const [dots, setDots] = useState(1);
   useEffect(() => {
     const t = setInterval(() => setDots((d) => (d % 3) + 1), 500);
@@ -90,7 +189,7 @@ function LoadingDots() {
         borderRadius: "50%", animation: "spin 0.8s linear infinite",
       }} />
       <p style={{ color: "#f59e0b", fontFamily: "'JetBrains Mono', monospace", fontSize: 14 }}>
-        Analizuję odpowiedź{".".repeat(dots)}
+        {T[lang].analyzing}{".".repeat(dots)}
       </p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -98,6 +197,7 @@ function LoadingDots() {
 }
 
 export default function Home() {
+  const [lang, setLang] = useState(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [currentInput, setCurrentInput] = useState("");
@@ -108,59 +208,51 @@ export default function Home() {
   const [lowEffortWarning, setLowEffortWarning] = useState(false);
   const textRef = useRef(null);
 
+  const t = lang ? T[lang] : T.pl;
+
   const reset = () => {
     setStep(0); setAnswers({}); setCurrentInput(""); setLoading(false);
     setGeneratedQuestions({}); setFinalResult(null); setError(""); setLowEffortWarning(false);
   };
 
-  const buildCtx = (ans) => {
-    const map = {
-      1: "PROCES DO AUTOMATYZACJI", 2: "JASNOŚĆ DEFINICJI PROBLEMU",
-      3: "PROJEKTOWANIE PROCESU BIZNESOWEGO", 4: "JAKOŚĆ DANYCH",
-      5: "WŁAŚCICIEL PROCESU", 6: "IDENTYFIKACJA RYZYK", 7: "PLAN AWARYJNY",
-    };
-    return Object.entries(ans).map(([k, v]) => `${map[k]}: ${v}`).join("\n\n");
+  const fullReset = () => {
+    reset();
+    setLang(null);
   };
 
-  const PROMPTS = {
-    2: `Jesteś ekspertem od wdrożeń AI w biznesie. Prowadzisz warsztat "Błędy adopcji AI w biznesie". Uczestnik opisał proces, który chce zautomatyzować z AI. Zadaj JEDNO konkretne pytanie sprawdzające, czy problem jest jasno zdefiniowany. Pytanie powinno być krótkie (1-2 zdania), nawiązywać bezpośrednio do tego, co napisał uczestnik. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj w nowej linii krótką wskazówkę zaczynającą się od "💡 Wskazówka:". Pisz po polsku.`,
-    3: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie sprawdzające, czy podejście uczestnika to przemyślany projekt, czy raczej "AI dla AI". Nawiąż do konkretnego procesu. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
-    4: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o jakość danych w kontekście tego procesu. Po pytaniu dodaj 2-3 zdania wyjaśnienia czym są "wystarczająco dobre dane" dla tego procesu. Pisz po polsku.`,
-    5: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o właściciela procesu. Nawiąż do procesu uczestnika. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
-    6: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o to, gdzie AI może się mylić w tym procesie. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
-    7: `Jesteś ekspertem od wdrożeń AI w biznesie. Zadaj JEDNO pytanie o plan awaryjny — co gdy AI się pomyli? Nawiąż do wskazanych ryzyk. Odpowiedz TYLKO pytaniem. Po pytaniu dodaj "💡 Wskazówka:". Pisz po polsku.`,
+  const buildCtx = (ans) => {
+    return Object.entries(ans).map(([k, v]) => `${t.ctxLabels[k]}: ${v}`).join("\n\n");
   };
 
   const generateQuestion = async (targetStep, ans) => {
     setLoading(true);
     setStep(targetStep);
     setError("");
-    const result = await callLLM(PROMPTS[targetStep], buildCtx(ans));
+    const result = await callLLM(t.prompts[targetStep], buildCtx(ans));
     if (result) setGeneratedQuestions((prev) => ({ ...prev, [targetStep]: result }));
-    else setError("Nie udało się wygenerować pytania. Spróbuj ponownie.");
+    else setError(t.errorGenQuestion);
     setLoading(false);
   };
 
   const generateFinal = async (ans) => {
     setLoading(true);
     setError("");
-    const system = `Jesteś ekspertem od wdrożeń AI w biznesie. Oceń gotowość procesu uczestnika do wdrożenia AI na podstawie jego odpowiedzi. Odpowiedz TYLKO w formacie JSON (bez markdown, bez backtickow): {"score":<0-100>,"comment":"<5 zdań>","strengths":["<s1>","<s2>"],"risks":["<r1>","<r2>"],"nextStep":"<zalecenie>"}. Pisz po polsku.`;
-    const result = await callLLM(system, buildCtx(ans));
+    const result = await callLLM(t.finalPrompt, buildCtx(ans));
     if (result) {
       try {
         const cleaned = result.replace(/```json\s*/g, "").replace(/```/g, "").trim();
         setFinalResult(JSON.parse(cleaned));
-      } catch { setError("Błąd analizy wyników. Spróbuj ponownie."); }
-    } else { setError("Nie udało się wygenerować oceny. Spróbuj ponownie."); }
+      } catch { setError(t.errorParse); }
+    } else { setError(t.errorGenResult); }
     setLoading(false);
   };
 
   const handleNext = async () => {
     const trimmed = currentInput.trim();
-    if (!trimmed) { setError("Proszę wpisać odpowiedź przed przejściem dalej."); return; }
+    if (!trimmed) { setError(t.errorEmpty); return; }
     if (isLowEffort(trimmed)) {
       setLowEffortWarning(true);
-      setError("Twoja odpowiedź jest zbyt krótka lub ogólnikowa. Opisz konkretny proces biznesowy.");
+      setError(t.errorLowEffort);
       return;
     }
     setLowEffortWarning(false); setError("");
@@ -173,48 +265,71 @@ export default function Home() {
 
   const downloadReport = () => {
     if (!finalResult) return;
-    const now = new Date().toLocaleDateString("pl-PL");
-    const report = `AI READINESS CHECK — RAPORT\nData: ${now}\nAutor: Maciej Broniszewski · dfe.academy\n\nWYNIK: ${finalResult.score}/100\n\n--- ODPOWIEDZI ---\n${Object.entries(answers).map(([k, v]) => `${k}. ${v}`).join("\n\n")}\n\n--- OCENA ---\n${finalResult.comment}\n\nMOCNE STRONY:\n${finalResult.strengths?.map(s => `✓ ${s}`).join("\n")}\n\nRYZYKA:\n${finalResult.risks?.map(r => `⚠ ${r}`).join("\n")}\n\nNASTĘPNY KROK:\n→ ${finalResult.nextStep}`;
+    const locale = lang === "pl" ? "pl-PL" : "en-US";
+    const now = new Date().toLocaleDateString(locale);
+    const report = `${t.reportTitle}\n${t.reportDate}: ${now}\n${t.reportAuthor}: Maciej Broniszewski · dfe.academy\n\n${t.reportScore}: ${finalResult.score}/100\n\n${t.reportAnswers}\n${Object.entries(answers).map(([k, v]) => `${k}. ${v}`).join("\n\n")}\n\n${t.reportEval}\n${finalResult.comment}\n\n${t.reportStrengths}:\n${finalResult.strengths?.map(s => `✓ ${s}`).join("\n")}\n\n${t.reportRisks}:\n${finalResult.risks?.map(r => `⚠ ${r}`).join("\n")}\n\n${t.reportNextStep}:\n→ ${finalResult.nextStep}`;
     const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `AI_Readiness_${now.replace(/\./g, "-")}.txt`; a.click();
+    a.href = url; a.download = `AI_Readiness_${now.replace(/[.\/ ]/g, "-")}.txt`; a.click();
     URL.revokeObjectURL(url);
   };
 
   const scoreColor = (s) => s >= 75 ? "#22c55e" : s >= 50 ? "#f59e0b" : s >= 25 ? "#f97316" : "#ef4444";
-  const scoreLabel = (s) => s >= 75 ? "Wysoka gotowość" : s >= 50 ? "Umiarkowana gotowość" : s >= 25 ? "Niska gotowość" : "Wymaga przygotowania";
+  const scoreLabel = (s) => s >= 75 ? t.scoreLabels.high : s >= 50 ? t.scoreLabels.moderate : s >= 25 ? t.scoreLabels.low : t.scoreLabels.none;
 
-  const stepTitles = { 1: "Zdefiniuj proces", 2: "Jasność definicji", 3: "Projekt procesu", 4: "Jakość danych", 5: "Właściciel procesu", 6: "Identyfikacja ryzyk", 7: "Plan awaryjny" };
-  const stepIcons = { 1: "🎯", 2: "🔍", 3: "⚙️", 4: "📊", 5: "👤", 6: "⚠️", 7: "🛡️" };
-
-  if (step === 0) return (
+  // --- LANGUAGE SELECT SCREEN ---
+  if (!lang) return (
     <div style={S.container}>
       <div style={S.innerWrap}>
         <div style={S.introCard}>
-          <div style={S.badge}>WARSZTAT INTERAKTYWNY</div>
           <h1 style={S.mainTitle}><span style={{ color: "#f59e0b" }}>AI</span> READINESS CHECK</h1>
-          <p style={S.subtitle}>Błędy adopcji sztucznej inteligencji w biznesie</p>
           <div style={S.divider} />
-          <p style={S.introText}>Sprawdź, czy Twój proces biznesowy jest gotowy na wdrożenie AI. Odpowiedz na 7 pytań — zajmie Ci to około 7 minut. Na końcu otrzymasz spersonalizowaną ocenę gotowości.</p>
-          <button style={S.primaryBtn} onClick={() => setStep(1)}>Rozpocznij sprawdzanie →</button>
-          <p style={S.authorLine}>Prowadzący: <strong>Maciej Broniszewski</strong> · dfe.academy</p>
+          <p style={{ ...S.introText, marginBottom: 36 }}>{T.pl.selectLang}</p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <button style={S.langBtn} onClick={() => { setLang("pl"); setStep(0); }}>
+              <span style={{ fontSize: 28 }}>🇵🇱</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700 }}>Polski</span>
+            </button>
+            <button style={S.langBtn} onClick={() => { setLang("en"); setStep(0); }}>
+              <span style={{ fontSize: 28 }}>🇬🇧</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700 }}>English</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 
+  // --- INTRO SCREEN ---
+  if (step === 0) return (
+    <div style={S.container}>
+      <div style={S.innerWrap}>
+        <div style={S.introCard}>
+          <div style={S.badge}>{t.badge}</div>
+          <h1 style={S.mainTitle}><span style={{ color: "#f59e0b" }}>AI</span> READINESS CHECK</h1>
+          <p style={S.subtitle}>{t.subtitle}</p>
+          <div style={S.divider} />
+          <p style={S.introText}>{t.introText}</p>
+          <button style={S.primaryBtn} onClick={() => setStep(1)}>{t.startBtn}</button>
+          <p style={S.authorLine}>{t.author} <strong>Maciej Broniszewski</strong> · dfe.academy</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // --- RESULT SCREEN ---
   if (step === 8) return (
     <div style={S.container}>
       <div style={S.innerWrap}>
         <div style={S.headerBar}>
           <span style={S.headerTitle}><span style={{ color: "#f59e0b" }}>AI</span> READINESS CHECK</span>
-          <button style={S.resetBtn} onClick={reset}>↺ Nowa sesja</button>
+          <button style={S.resetBtn} onClick={fullReset}>{t.newSession}</button>
         </div>
-        <ProgressBar currentStep={8} />
-        {loading ? <LoadingDots /> : finalResult ? (
+        <ProgressBar currentStep={8} lang={lang} />
+        {loading ? <LoadingDots lang={lang} /> : finalResult ? (
           <div style={S.resultCard}>
-            <div style={S.badge}>WYNIK ANALIZY</div>
+            <div style={S.badge}>{t.resultBadge}</div>
             <div style={S.scoreCircleWrap}>
               <svg width="180" height="180" viewBox="0 0 180 180">
                 <circle cx="90" cy="90" r="80" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
@@ -231,52 +346,53 @@ export default function Home() {
             <div style={S.commentBox}><p style={S.commentText}>{finalResult.comment}</p></div>
             <div style={S.twoCol}>
               <div style={S.colCard}>
-                <h3 style={{ ...S.colTitle, color: "#22c55e" }}>✓ Mocne strony</h3>
+                <h3 style={{ ...S.colTitle, color: "#22c55e" }}>{t.strengths}</h3>
                 {finalResult.strengths?.map((s, i) => <p key={i} style={S.colItem}>{s}</p>)}
               </div>
               <div style={S.colCard}>
-                <h3 style={{ ...S.colTitle, color: "#f97316" }}>⚠ Ryzyka</h3>
+                <h3 style={{ ...S.colTitle, color: "#f97316" }}>{t.risks}</h3>
                 {finalResult.risks?.map((r, i) => <p key={i} style={S.colItem}>{r}</p>)}
               </div>
             </div>
             <div style={S.nextStepBox}>
-              <h3 style={S.nextStepTitle}>→ Następny krok</h3>
+              <h3 style={S.nextStepTitle}>{t.nextStep}</h3>
               <p style={S.nextStepText}>{finalResult.nextStep}</p>
             </div>
-            <button style={S.primaryBtn} onClick={downloadReport}>⬇ Pobierz raport (TXT)</button>
-            <p style={S.authorLine}>Narzędzie: <strong>Maciej Broniszewski</strong> · dfe.academy</p>
+            <button style={S.primaryBtn} onClick={downloadReport}>{t.download}</button>
+            <p style={S.authorLine}>{t.toolBy} <strong>Maciej Broniszewski</strong> · dfe.academy</p>
           </div>
         ) : error ? (
           <div style={S.card}>
             <p style={S.errorText}>{error}</p>
-            <button style={S.primaryBtn} onClick={() => generateFinal(answers)}>Spróbuj ponownie</button>
+            <button style={S.primaryBtn} onClick={() => generateFinal(answers)}>{t.retry}</button>
           </div>
         ) : null}
       </div>
     </div>
   );
 
+  // --- QUESTION STEPS ---
   return (
     <div style={S.container}>
       <div style={S.innerWrap}>
         <div style={S.headerBar}>
           <span style={S.headerTitle}><span style={{ color: "#f59e0b" }}>AI</span> READINESS CHECK</span>
-          <button style={S.resetBtn} onClick={reset}>↺ Nowa sesja</button>
+          <button style={S.resetBtn} onClick={fullReset}>{t.newSession}</button>
         </div>
-        <ProgressBar currentStep={step} />
-        {loading ? <LoadingDots /> : (
+        <ProgressBar currentStep={step} lang={lang} />
+        {loading ? <LoadingDots lang={lang} /> : (
           <div style={S.card}>
             <div style={S.stepHeader}>
-              <span style={S.stepIcon}>{stepIcons[step]}</span>
+              <span style={S.stepIcon}>{STEP_ICONS[step]}</span>
               <div>
-                <div style={S.stepLabel}>Krok {step} z 7</div>
-                <h2 style={S.stepTitle}>{stepTitles[step]}</h2>
+                <div style={S.stepLabel}>{t.stepOf(step)}</div>
+                <h2 style={S.stepTitle}>{t.stepTitles[step]}</h2>
               </div>
             </div>
             {step === 1 ? (
               <div>
-                <p style={S.questionText}>Opisz proces biznesowy, który chciałbyś zautomatyzować lub usprawnić z pomocą sztucznej inteligencji.</p>
-                <p style={S.hintText}>Napisz krótko — wystarczą 1–3 zdania. Podaj konkretny proces, np. „automatyczna klasyfikacja faktur kosztowych".</p>
+                <p style={S.questionText}>{t.question1}</p>
+                <p style={S.hintText}>{t.hint1}</p>
               </div>
             ) : (
               <div style={S.questionText}>
@@ -286,7 +402,7 @@ export default function Home() {
               </div>
             )}
             <textarea ref={textRef} style={S.textarea}
-              placeholder="Wpisz swoją odpowiedź tutaj..."
+              placeholder={t.placeholder}
               value={currentInput}
               onChange={(e) => { setCurrentInput(e.target.value); setError(""); setLowEffortWarning(false); }}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleNext(); } }}
@@ -295,12 +411,12 @@ export default function Home() {
             {error && (
               <div style={S.errorBox}>
                 <p style={S.errorText}>{error}</p>
-                {lowEffortWarning && <button style={S.resetSmallBtn} onClick={reset}>↺ Zacznij od nowa</button>}
+                {lowEffortWarning && <button style={S.resetSmallBtn} onClick={fullReset}>{t.startOver}</button>}
               </div>
             )}
             <div style={S.btnRow}>
-              <span style={S.timerHint}>⏱ ~1 min</span>
-              <button style={S.primaryBtn} onClick={handleNext}>{step === 7 ? "Pokaż wynik →" : "Dalej →"}</button>
+              <span style={S.timerHint}>{t.timer}</span>
+              <button style={S.primaryBtn} onClick={handleNext}>{step === 7 ? t.showResult : t.nextBtn}</button>
             </div>
           </div>
         )}
@@ -351,4 +467,5 @@ const S = {
   nextStepBox: { background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "18px 22px", marginBottom: 28, textAlign: "left" },
   nextStepTitle: { fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: "#22c55e", fontWeight: 700, margin: "0 0 8px" },
   nextStepText: { fontSize: 15, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, margin: 0 },
+  langBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "20px 36px", cursor: "pointer", color: "#e8e8ed", transition: "all 0.2s ease" },
 };
