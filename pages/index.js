@@ -13,7 +13,7 @@ const T = {
     stepOf: (n) => `Krok ${n} z 7`,
     stepTitles: { 1: "Zdefiniuj proces", 2: "Jasność definicji", 3: "Projekt procesu", 4: "Jakość danych", 5: "Właściciel procesu", 6: "Identyfikacja ryzyk", 7: "Plan awaryjny" },
     question1: "Opisz proces biznesowy, który chciałbyś zautomatyzować lub usprawnić z pomocą sztucznej inteligencji.",
-    hint1: "Napisz krótko — wystarczą 1–3 zdania. Podaj konkretny proces, np. „automatyczna klasyfikacja faktur kosztowych".",
+    hint1: "Napisz krótko — wystarczą 1–3 zdania. Podaj konkretny proces, np. 'automatyczna klasyfikacja faktur kosztowych'.",
     placeholder: "Wpisz swoją odpowiedź tutaj...",
     nextBtn: "Dalej →",
     showResult: "Pokaż wynik →",
