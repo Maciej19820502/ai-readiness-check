@@ -117,9 +117,14 @@ async function callLLM(systemPrompt, userPrompt) {
       body: JSON.stringify({ system: systemPrompt, userMessage: userPrompt }),
     });
     const data = await response.json();
-    return data.text || null;
+    if (!response.ok) {
+      console.error("API error:", response.status, data);
+      return { error: data.error || `API error ${response.status}` };
+    }
+    return { text: data.text || "" };
   } catch (e) {
-    return null;
+    console.error("Fetch error:", e);
+    return { error: e.message };
   }
 }
 
@@ -229,7 +234,8 @@ export default function Home() {
     setStep(targetStep);
     setError("");
     const result = await callLLM(t.prompts[targetStep], buildCtx(ans));
-    if (result) setGeneratedQuestions((prev) => ({ ...prev, [targetStep]: result }));
+    if (result.error) setError(t.errorGenQuestion + " (" + result.error + ")");
+    else if (result.text) setGeneratedQuestions((prev) => ({ ...prev, [targetStep]: result.text }));
     else setError(t.errorGenQuestion);
     setLoading(false);
   };
@@ -238,9 +244,10 @@ export default function Home() {
     setLoading(true);
     setError("");
     const result = await callLLM(t.finalPrompt, buildCtx(ans));
-    if (result) {
+    if (result.error) { setError(t.errorGenResult + " (" + result.error + ")"); }
+    else if (result.text) {
       try {
-        const cleaned = result.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+        const cleaned = result.text.replace(/```json\s*/g, "").replace(/```/g, "").trim();
         setFinalResult(JSON.parse(cleaned));
       } catch { setError(t.errorParse); }
     } else { setError(t.errorGenResult); }
